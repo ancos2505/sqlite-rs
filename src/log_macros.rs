@@ -12,7 +12,7 @@ macro_rules! error {
                     .ok()
                     .unwrap()
                     .as_secs_f64();
-                    println!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
+                    eprintln!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
                 }
             }
         }
@@ -33,7 +33,7 @@ macro_rules! warn {
                     .ok()
                     .unwrap()
                     .as_secs_f64();
-                    println!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
+                    eprintln!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
                 }
             }
         }
@@ -54,7 +54,7 @@ macro_rules! info {
                     .ok()
                     .unwrap()
                     .as_secs_f64();
-                    println!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
+                    eprintln!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
                 }
             }
         }
@@ -75,7 +75,7 @@ macro_rules! debug {
                     .ok()
                     .unwrap()
                     .as_secs_f64();
-                    println!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
+                    eprintln!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
                 }
             }
         }
@@ -96,7 +96,7 @@ macro_rules! trace {
                     .ok()
                     .unwrap()
                     .as_secs_f64();
-                    println!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
+                    eprintln!("{epoch_time:.7} {this} {mod_path}: {}", format_args!($($input)+));
                 }
             }
         }

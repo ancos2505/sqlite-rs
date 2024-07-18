@@ -5,7 +5,7 @@ SQLite library written in Rust and no dependencies (Under Development)
 
 ## Installation
 ```sh
-cargo install sqlite-rs
+cargo install --git=https://github.com/ancos2505/sqlite-rs.git
 ```
 
 

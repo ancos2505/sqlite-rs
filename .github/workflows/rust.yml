@@ -1,0 +1,45 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: sqlite-rs
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-${{ matrix.backend }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+
+    - name: Install musl dependencies
+      run: sudo apt-get update && sudo apt-get install musl-tools
+    
+    - name: Install musl target
+      run: rustup target add x86_64-unknown-linux-musl
+
+    - name: Build
+      run: cargo build --release --target=x86_64-unknown-linux-musl
+
+    - name: Run tests
+      run: cargo test --verbose
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.BINARY_NAME }}
+        path: ./target/x86_64-unknown-linux-musl/release/${{ env.BINARY_NAME }}
+        retention-days: 7

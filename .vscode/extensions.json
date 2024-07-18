@@ -1,0 +1,9 @@
+{
+	"recommendations": [
+		"edwinhuish.better-comments-next",
+		"tamasfe.even-better-toml",
+		"rust-lang.rust-analyzer",
+		"nefrob.vscode-just-syntax"
+
+	]
+}
