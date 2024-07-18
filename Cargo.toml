@@ -1,0 +1,44 @@
+[package]
+edition = "2021"
+rust-version = "1.79.0"
+name = "sqlite-rs"
+version = "0.3.8"
+description = "SQLite reader with no dependencies"
+readme = "README.md"
+keywords = [
+    "sqlite",
+    "database",
+]
+license = "MIT"
+repository = "https://github.com/ancos2505/sqlite-rs"
+
+[profile.bench]
+opt-level = 3
+lto = true
+debug = 0
+debug-assertions = false
+
+[profile.dev]
+opt-level = 0
+lto = false
+debug = 2
+debug-assertions = true
+
+[profile.release]
+opt-level = 3
+lto = true
+debug = 0
+debug-assertions = false
+strip = true
+
+[profile.test]
+opt-level = 0
+lto = false
+debug = 2
+debug-assertions = true
+
+[dependencies]
+
+[features]
+default = ["log"]
+log = []
