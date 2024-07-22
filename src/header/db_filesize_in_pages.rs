@@ -49,9 +49,9 @@ impl ParseBytes for DatabaseFileSizeInPages {
   fn parsing_handler(bytes: &[u8]) -> SqliteResult<Self> {
     let buf: [u8; Self::LENGTH_BYTES] = bytes.try_into()?;
 
-    let database_size = NonZeroU32::new(u32::from_be_bytes(buf)).ok_or(
-      SqliteError::Custom("DatabaseFileSizeInPages can't be `0`".into()),
-    )?;
+    let database_size = NonZeroU32::new(u32::from_be_bytes(buf)).ok_or(SqliteError::Custom(
+      "DatabaseFileSizeInPages can't be `0`".into(),
+    ))?;
 
     Ok(Self(database_size.get()))
   }

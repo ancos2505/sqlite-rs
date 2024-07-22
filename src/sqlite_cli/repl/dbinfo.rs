@@ -1,18 +1,18 @@
 use super::traits::PrintHelp;
 use crate::sqlite_cli::result::SqliteCliResult;
-use sqlite_rs::SqliteConnection;
+use sqlite_rs::runtime::SqliteRuntime;
 
 pub(super) struct ReplDbInfo;
 
 impl ReplDbInfo {
-  pub(super) fn run(conn: &mut SqliteConnection) -> SqliteCliResult<()> {
-    Self::print_sqlite_info(conn)
+  pub(super) fn run(runtime: &mut SqliteRuntime) -> SqliteCliResult<()> {
+    Self::print_sqlite_info(runtime)
   }
-  fn print_sqlite_info(conn: &SqliteConnection) -> SqliteCliResult<()> {
+  fn print_sqlite_info(runtime: &SqliteRuntime) -> SqliteCliResult<()> {
     const LABEL_WIDTH: usize = 21;
 
     // TODO:
-    let sqlite_header = conn.runtime().header();
+    let sqlite_header = runtime.header();
 
     let mut output = "".to_owned();
 
@@ -26,15 +26,13 @@ impl ReplDbInfo {
       "{label: <w$}{value}\n",
       w = LABEL_WIDTH,
       label = "write format:",
-      value =
-        u8::from(sqlite_header.file_format_version_numbers().write_version())
+      value = u8::from(sqlite_header.file_format_version_numbers().write_version())
     ));
     output.push_str(&format!(
       "{label: <w$}{value}\n",
       w = LABEL_WIDTH,
       label = "read format:",
-      value =
-        u8::from(sqlite_header.file_format_version_numbers().read_version())
+      value = u8::from(sqlite_header.file_format_version_numbers().read_version())
     ));
     output.push_str(&format!(
       "{label: <w$}{value}\n",
@@ -138,8 +136,7 @@ impl ReplDbInfo {
 }
 impl PrintHelp for ReplDbInfo {
   fn help() -> SqliteCliResult<()> {
-    let help =
-      [".dbinfo ?DB?             Show status information about the database"];
+    let help = [".dbinfo ?DB?             Show status information about the database"];
 
     help.iter().for_each(|line| println!("{line}"));
     Ok(())

@@ -51,15 +51,13 @@ impl SqliteInfo {
       "{label: <w$}{value}\n",
       w = LABEL_WIDTH,
       label = "write format:",
-      value =
-        u8::from(sqlite_header.file_format_version_numbers().write_version())
+      value = u8::from(sqlite_header.file_format_version_numbers().write_version())
     ));
     output.push_str(&format!(
       "{label: <w$}{value}\n",
       w = LABEL_WIDTH,
       label = "read format:",
-      value =
-        u8::from(sqlite_header.file_format_version_numbers().read_version())
+      value = u8::from(sqlite_header.file_format_version_numbers().read_version())
     ));
     output.push_str(&format!(
       "{label: <w$}{value}\n",

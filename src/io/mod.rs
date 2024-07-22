@@ -21,6 +21,7 @@ impl Debug for SqliteIo {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.debug_struct("SqliteIo")
       .field("mode", &self.mode)
+      .field("raw_io", &"...")
       .finish()
   }
 }
@@ -127,6 +128,7 @@ impl FromStr for SqliteUri {
             error!("{err}");
             err
           })?;
+        // TODO: SqliteUriFileMode
         let mode = iter_path
           .next()
           .and_then(|s| {
@@ -134,15 +136,31 @@ impl FromStr for SqliteUri {
             s.parse::<SqliteUriFileMode>().ok()
           })
           .unwrap_or_default();
-        trace!("{mode:?}");
+        trace!("Mode: {mode:?}");
+
+        // TODO: SqliteUriFileMode
+        /*
+        use std::io::Read;
+        use std::io::Seek;
+        use std::{fs::OpenOptions, io::SeekFrom};
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(false)
+            .create(false)
+        .open(path)?;
+         */
+
         let file_path = PathBuf::from_str(file_path).unwrap();
-        trace!("{file_path:?}");
+        trace!("Parsed file path: {file_path:?}");
+
         let path = if mode == SqliteUriFileMode::ReadWriteCreate {
           create_file(&file_path)?;
           file_path
         } else {
+          let cwd = std::env::current_dir()?.display().to_string();
+          trace!("Current folder: [{cwd}]");
           file_path.canonicalize().map_err(|err| {
-            error!("Error on open file [{uri_str}]: [{err}].");
+            error!("Error on locate a valid file path [{uri_str}]: [{err}].");
             error!("Hint: You can change mode to `?mode=rwc` or check you file path.");
             SqliteError::Custom("Error on parsing file path".into())
           })?
@@ -198,9 +216,7 @@ impl FromStr for SqliteUriFileMode {
 
 fn create_file(path: &PathBuf) -> SqliteResult<()> {
   let maybe_parent_dir = path.parent();
-  maybe_parent_dir
-    .map(std::fs::create_dir_all)
-    .transpose()?;
+  maybe_parent_dir.map(std::fs::create_dir_all).transpose()?;
   File::create(path)?;
   Ok(())
 }

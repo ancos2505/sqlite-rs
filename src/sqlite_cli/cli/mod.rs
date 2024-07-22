@@ -59,12 +59,8 @@ impl TryFrom<Args> for Cli {
       let k = arg.next();
       let v = arg.collect::<Vec<_>>().join("=");
       match (k, v) {
-        (Some("--database-file"), value) => {
-          cli_args.add((CliDatabaseFile::arg_name(), value))
-        }
-        (Some("--help"), _) => {
-          cli_args.add((CliHelp::arg_name(), Default::default()))
-        }
+        (Some("--database-file"), value) => cli_args.add((CliDatabaseFile::arg_name(), value)),
+        (Some("--help"), _) => cli_args.add((CliHelp::arg_name(), Default::default())),
         _ => {
           println!(
             "{}: Error: unknown option: {}",
