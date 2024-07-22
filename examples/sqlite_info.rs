@@ -1,7 +1,7 @@
 // use sqlite_rs::SqliteConnection;
 // use std::{fs::File, io::Read};
 
-use sqlite_rs::SqliteConnection;
+use sqlite_rs::{runtime::SqliteRuntime, SqliteConnection};
 
 type AppResult<T> = Result<T, AppError>;
 type AppError = Box<dyn std::error::Error>;
@@ -22,22 +22,22 @@ impl SqliteInfo {
       "./data/mydatabase.db",
     ];
     files.iter().try_for_each(|file_path| -> AppResult<()> {
-      let conn = SqliteConnection::open(format!("sqlite://{file_path}"))?;
+      let runtime = SqliteConnection::open(format!("sqlite://{file_path}"))?;
       // let sqlite_database = Self::read_bytes(&file)?;
 
       println!("[{file_path}]:");
-      Self::print_sqlite_info(&conn)?;
+      Self::print_sqlite_info(&runtime)?;
       Ok(())
     })?;
 
     Ok(())
   }
 
-  fn print_sqlite_info(conn: &SqliteConnection) -> AppResult<()> {
+  fn print_sqlite_info(runtime: &SqliteRuntime) -> AppResult<()> {
     const LABEL_WIDTH: usize = 21;
 
     // TODO:
-    let sqlite_header = conn.runtime().header();
+    let sqlite_header = runtime.header();
 
     let mut output = "".to_owned();
 
@@ -51,15 +51,13 @@ impl SqliteInfo {
       "{label: <w$}{value}\n",
       w = LABEL_WIDTH,
       label = "write format:",
-      value =
-        u8::from(sqlite_header.file_format_version_numbers().write_version())
+      value = u8::from(sqlite_header.file_format_version_numbers().write_version())
     ));
     output.push_str(&format!(
       "{label: <w$}{value}\n",
       w = LABEL_WIDTH,
       label = "read format:",
-      value =
-        u8::from(sqlite_header.file_format_version_numbers().read_version())
+      value = u8::from(sqlite_header.file_format_version_numbers().read_version())
     ));
     output.push_str(&format!(
       "{label: <w$}{value}\n",

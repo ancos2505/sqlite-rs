@@ -39,8 +39,8 @@ pub use self::{
   magic_header_string::MagicHeaderString,
   page_size::PageSize,
   payload_fractions::{
-    LeafPayloadFraction, MaximumEmbeddedPayloadFraction,
-    MinimumEmbeddedPayloadFraction, PayloadFractions,
+    LeafPayloadFraction, MaximumEmbeddedPayloadFraction, MinimumEmbeddedPayloadFraction,
+    PayloadFractions,
   },
   reserved_bytes_per_page::ReservedBytesPerPage,
   reserved_for_expansion::ReservedForExpansion,
@@ -224,15 +224,12 @@ impl ParseBytes for SqliteHeader {
   fn parsing_handler(bytes: &[u8]) -> crate::result::SqliteResult<Self> {
     let magic_header_string = MagicHeaderString::parse_bytes(&bytes[0..=15])?;
     let page_size = PageSize::parse_bytes(&bytes[16..=17])?;
-    let file_format_version_numbers =
-      FileFormatVersionNumbers::parse_bytes(&bytes[18..=19])?;
-    let reserved_bytes_per_page =
-      ReservedBytesPerPage::parse_bytes(&[bytes[20]])?;
+    let file_format_version_numbers = FileFormatVersionNumbers::parse_bytes(&bytes[18..=19])?;
+    let reserved_bytes_per_page = ReservedBytesPerPage::parse_bytes(&[bytes[20]])?;
     let payload_fractions = PayloadFractions::parse_bytes(&bytes[21..=23])?;
 
     let file_change_counter = FileChangeCounter::parse_bytes(&bytes[24..=27])?;
-    let db_filesize_in_pages =
-      DatabaseFileSizeInPages::parse_bytes(&bytes[28..=31])?;
+    let db_filesize_in_pages = DatabaseFileSizeInPages::parse_bytes(&bytes[28..=31])?;
 
     let freelist_pages = FreeListPages::parse_bytes(&bytes[32..=39])?;
 
@@ -240,33 +237,25 @@ impl ParseBytes for SqliteHeader {
 
     let schema_format = SchemaFormat::parse_bytes(&bytes[44..=47])?;
 
-    let suggested_cache_size =
-      SuggestedCacheSize::parse_bytes(&bytes[48..=51])?;
+    let suggested_cache_size = SuggestedCacheSize::parse_bytes(&bytes[48..=51])?;
 
     let largest_root_btree_page =
-      incremental_vacuum_settings::LargestRootBtreePage::parse_bytes(
-        &bytes[52..=55],
-      )?;
+      incremental_vacuum_settings::LargestRootBtreePage::parse_bytes(&bytes[52..=55])?;
 
-    let database_text_encoding =
-      DatabaseTextEncoding::parse_bytes(&bytes[56..=59])?;
+    let database_text_encoding = DatabaseTextEncoding::parse_bytes(&bytes[56..=59])?;
 
     let user_version = UserVersion::parse_bytes(&bytes[60..=63])?;
 
     let incremental_vacuum_mode =
-      incremental_vacuum_settings::IncrementalVacuumMode::parse_bytes(
-        &bytes[64..=67],
-      )?;
+      incremental_vacuum_settings::IncrementalVacuumMode::parse_bytes(&bytes[64..=67])?;
 
     let application_id = ApplicationId::parse_bytes(&bytes[68..=71])?;
 
-    let reserved_for_expansion =
-      ReservedForExpansion::parse_bytes(&bytes[72..=91])?;
+    let reserved_for_expansion = ReservedForExpansion::parse_bytes(&bytes[72..=91])?;
 
     let version_valid_for = VersionValidFor::parse_bytes(&bytes[92..=95])?;
 
-    let write_library_version =
-      WriteLibraryVersion::parse_bytes(&bytes[96..=99])?;
+    let write_library_version = WriteLibraryVersion::parse_bytes(&bytes[96..=99])?;
 
     Ok(Self {
       magic_header_string,
@@ -300,8 +289,7 @@ impl ValidateParsed for SqliteHeader {
       //  The usable size is not allowed to be less than 480. In other words, if
       // the page size is 512, then the reserved space size cannot exceed 32.
       const MINIMUM_USABLE_SIZE: u32 = 480;
-      if (u32::from(self.page_size())
-        - u32::from(**self.reserved_bytes_per_page()))
+      if (u32::from(self.page_size()) - u32::from(**self.reserved_bytes_per_page()))
         < MINIMUM_USABLE_SIZE
       {
         return Err(SqliteError::HeaderValidationError(
@@ -323,8 +311,8 @@ impl ValidateParsed for SqliteHeader {
       }
       if **self.file_change_counter() != **self.version_valid_for() {
         return Err(SqliteError::HeaderValidationError(
-        "The change counter must exactly matches the version-valid-for number".into(),
-      ));
+          "The change counter must exactly matches the version-valid-for number".into(),
+        ));
       }
       //  If a legacy version of Sqlite writes to the database, it will not know
       // to update the in-header database size and so the in-header database
@@ -373,8 +361,7 @@ impl ValidateParsed for SqliteHeader {
       // at offset 52 is zero then the integer at offset 64 must also be zero.
       let incremental_vacuum_mode =
         u32::from(self.incremental_vacuum_settings.incremental_vacuum_mode());
-      let largest_root_btree_page =
-        **self.incremental_vacuum_settings.largest_root_btree_page();
+      let largest_root_btree_page = **self.incremental_vacuum_settings.largest_root_btree_page();
       if incremental_vacuum_mode == 0 && largest_root_btree_page != 0 {
         return Err(SqliteError::HeaderValidationError(
           "Incremental vacuum settings is zero but corrupted".into(),
@@ -393,8 +380,7 @@ impl ValidateParsed for SqliteHeader {
       }
       if **self.file_change_counter() < **self.version_valid_for() {
         return Err(SqliteError::HeaderValidationError(
-          "The version-valid-for number or the change counter maybe corrupted"
-            .into(),
+          "The version-valid-for number or the change counter maybe corrupted".into(),
         ));
       }
     }

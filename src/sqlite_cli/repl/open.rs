@@ -1,17 +1,22 @@
 use super::traits::PrintHelp;
 use crate::sqlite_cli::result::SqliteCliResult;
-use sqlite_rs::SqliteConnection;
+use sqlite_rs::{io::SqliteIo, pager::SqlitePager, runtime::SqliteRuntime};
 
 pub(super) struct ReplOpen;
 impl ReplOpen {
-  pub(super) fn run(
-    maybe_arg1: Option<String>,
-  ) -> SqliteCliResult<SqliteConnection> {
+  pub(super) fn run(maybe_arg1: Option<String>) -> SqliteCliResult<SqliteRuntime> {
     let conn = match maybe_arg1 {
       Some(file_path) => {
-        SqliteConnection::open(format!("sqlite://{}", file_path.as_str()))?
+        let io = SqliteIo::open(file_path)?;
+        let pager = SqlitePager::connect(io)?;
+
+        SqliteRuntime::start(pager)?
       }
-      None => SqliteConnection::open(":memory:")?,
+      None => {
+        let io = SqliteIo::open(":memory:")?;
+        let pager = SqlitePager::connect(io)?;
+        SqliteRuntime::start(pager)?
+      }
     };
     Ok(conn)
   }

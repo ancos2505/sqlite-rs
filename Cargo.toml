@@ -2,7 +2,7 @@
 edition = "2021"
 rust-version = "1.79.0"
 name = "sqlite-rs"
-version = "0.3.9"
+version = "0.4.1"
 description = "SQLite reader with no dependencies"
 readme = "README.md"
 keywords = [

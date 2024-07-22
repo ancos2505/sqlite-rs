@@ -7,6 +7,7 @@ use crate::io::SqliteIo;
 use crate::pager::SqlitePager;
 use crate::result::SqliteResult;
 use crate::runtime::SqliteRuntime;
+
 use std::sync::OnceLock;
 
 pub mod header;
@@ -25,14 +26,12 @@ pub mod macros;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug)]
-pub struct SqliteConnection {
-  runtime: SqliteRuntime,
-}
+pub struct SqliteConnection;
+
 static VERSION_NUMBER: OnceLock<u32> = OnceLock::new();
 
 impl SqliteConnection {
-  pub fn open(conn_str: impl AsRef<str>) -> SqliteResult<Self> {
+  pub fn open(conn_str: impl AsRef<str>) -> SqliteResult<SqliteRuntime> {
     crate::log::EnvLogger::init();
 
     VERSION_NUMBER.get_or_init(|| {
@@ -54,14 +53,6 @@ impl SqliteConnection {
     let runtime = SqliteRuntime::start(pager)?;
     trace!("SqliteRuntime started: [{runtime:?}].");
 
-    Ok(Self { runtime })
-  }
-
-  pub fn runtime(&self) -> &SqliteRuntime {
-    &self.runtime
-  }
-
-  pub fn runtime_mut(&mut self) -> &mut SqliteRuntime {
-    &mut self.runtime
+    Ok(runtime)
   }
 }
