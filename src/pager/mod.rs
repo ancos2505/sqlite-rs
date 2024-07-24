@@ -121,8 +121,8 @@ impl SqlitePager {
   pub fn page_size(&self) -> &PageSize {
     &self.page_size
   }
-  
+
   pub fn io(&self) -> &SqliteIo {
-        &self.io
-    }
+    &self.io
+  }
 }
