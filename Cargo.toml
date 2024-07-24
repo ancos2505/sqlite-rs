@@ -2,13 +2,10 @@
 edition = "2021"
 rust-version = "1.79.0"
 name = "sqlite-rs"
-version = "0.4.1"
+version = "0.4.2"
 description = "SQLite reader with no dependencies"
 readme = "README.md"
-keywords = [
-    "sqlite",
-    "database",
-]
+keywords = ["sqlite", "database"]
 license = "MIT"
 repository = "https://github.com/ancos2505/sqlite-rs"
 
@@ -41,4 +38,7 @@ debug-assertions = true
 
 [features]
 default = ["log"]
+# default = ["log","show-ct-checks"]
+
 log = []
+show-ct-checks = []
