@@ -46,7 +46,7 @@ impl TryFrom<Args> for Cli {
   fn try_from(args: Args) -> Result<Self, Self::Error> {
     let args_len = args.len();
 
-    if (args_len > 0 && args_len < (CLI_NUM_FIELDS + 2)).not() {
+    if !(args_len > 0 && args_len < (CLI_NUM_FIELDS + 2)) {
       return Err(SqliteCliError::InvalidCLiArgs(format!(
         "Invalid args length: {args_len}"
       )));

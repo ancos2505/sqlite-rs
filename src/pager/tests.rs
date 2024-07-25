@@ -12,9 +12,9 @@ fn ok_on_check_page_size() {
   debug!("{res:?}");
   assert!(res.is_ok());
 
-  let runtime: SqliteRuntime = res.unwrap();
+  let conn = res.unwrap();
 
-  debug!("{runtime:?}");
+  debug!("{conn:?}");
 
-  assert_eq!(runtime.header().page_size(), runtime.pager().page_size());
+  assert_eq!(*conn.file_header().page_size(), 4096);
 }

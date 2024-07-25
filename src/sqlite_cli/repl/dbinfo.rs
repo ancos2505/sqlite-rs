@@ -1,18 +1,20 @@
+use sqlite_rs::SqliteConnection;
+
 use super::traits::PrintHelp;
 use crate::sqlite_cli::result::SqliteCliResult;
-use sqlite_rs::runtime::SqliteRuntime;
+// use sqlite_rs::runtime::SqliteRuntime;
 
 pub(super) struct ReplDbInfo;
 
 impl ReplDbInfo {
-  pub(super) fn run(runtime: &mut SqliteRuntime) -> SqliteCliResult<()> {
-    Self::print_sqlite_info(runtime)
+  pub(super) fn run(conn: &mut SqliteConnection) -> SqliteCliResult<()> {
+    Self::print_sqlite_info(conn)
   }
-  fn print_sqlite_info(runtime: &SqliteRuntime) -> SqliteCliResult<()> {
+  fn print_sqlite_info(conn: &SqliteConnection) -> SqliteCliResult<()> {
     const LABEL_WIDTH: usize = 21;
 
     // TODO:
-    let sqlite_header = runtime.header();
+    let sqlite_header = conn.file_header();
 
     let mut output = "".to_owned();
 

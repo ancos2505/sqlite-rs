@@ -31,6 +31,7 @@
 //!     - An index b-tree leaf page
 //! - A payload overflow page
 //! - A pointer map page
+//! - The lock-byte page
 //!
 //!  All reads from and writes to the main database file begin at a page
 //! boundary and all writes are an integer number of pages in size. Reads are
@@ -46,6 +47,12 @@
 //! restored on a rollback and so they are not written to the journal prior to
 //! modification, in order to reduce disk I/O.
 //!
+//!  All reads from and writes to the main database file begin at a page
+//! boundary and all writes are an integer number of pages in size. Reads are
+//! also usually an integer number of pages in size, with the one exception that
+//! when the database is first opened, the first 100 bytes of the database file
+//! (the database file header) are read as a sub-page size unit.
+//!
 //! *Reference:* https://www.sqlite.org/fileformat2.html#pages
 
 mod btree;
@@ -59,21 +66,26 @@ mod tests;
 
 use std::{any::Any, fmt::Debug};
 
+use btree::BtreePage;
+
 use crate::result::SqliteResult;
 
 pub struct Page<const N: usize> {
-  size: usize,
-  data: [u8; N],
-  kind: PageKind,
+  pub(super) size: usize,
+  pub(super) data: Box<[u8; N]>,
+  pub(super) kind: PageKind,
 }
 
 impl<const N: usize> Page<N> {
   pub fn parse(input: &[u8]) -> SqliteResult<Self> {
     let page = input.try_into().map(|data: [u8; N]| Page {
       size: data.len(),
-      data,
+      data: Box::new(data),
       kind: PageKind::_Todo,
     })?;
+    dbg!(&page);
+    let btree_page = BtreePage::parse(*page.data)?;
+    dbg!(btree_page);
     Ok(page)
   }
 
@@ -81,8 +93,11 @@ impl<const N: usize> Page<N> {
     self.size
   }
 
-  pub fn data(&self) -> [u8; N] {
-    self.data
+  pub fn data(&self) -> &[u8; N] {
+    &self.data
+  }
+  pub fn kind(&self) -> &PageKind {
+    &self.kind
   }
   pub fn from_dyn(page_any: Box<dyn Any>) -> Option<Self> {
     page_any.downcast::<Self>().ok().map(|p| *p)
@@ -99,24 +114,9 @@ impl<const N: usize> Debug for Page<N> {
   }
 }
 
-trait ValidPageSize {}
-
-impl ValidPageSize for Page<512> {}
-impl ValidPageSize for Page<1024> {}
-impl ValidPageSize for Page<2048> {}
-impl ValidPageSize for Page<4096> {}
-impl ValidPageSize for Page<8192> {}
-impl ValidPageSize for Page<16384> {}
-impl ValidPageSize for Page<32768> {}
-impl ValidPageSize for Page<65536> {}
-
 /// # PageKind
 ///  At any point in time, every page in the main database has a single use
 /// which is one of the following:
-/// - The lock-byte page
-/// - A freelist page
-///     - A freelist trunk page
-///     - A freelist leaf page
 /// - A b-tree page
 ///     - A table b-tree interior page
 ///     - A table b-tree leaf page
@@ -124,17 +124,16 @@ impl ValidPageSize for Page<65536> {}
 ///     - An index b-tree leaf page
 /// - A payload overflow page
 /// - A pointer map page
+/// - The lock-byte page
 #[derive(Debug)]
-enum PageKind {
+pub enum PageKind {
   // TODO
   _Todo,
-  LockByte,
-  FreelistTrunk,
-  FreelistLeaf,
   TableBtreeInterior,
   TableBtreeLeaf,
   IndexBtreeInterior,
   IndexBtreeLeaf,
   PayloadOverflow,
   PointerMap,
+  LockByte,
 }

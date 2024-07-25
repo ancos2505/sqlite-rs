@@ -1,23 +1,34 @@
-use super::traits::PrintHelp;
+use sqlite_rs::{SqliteConnection, IN_MEMORY_URI};
+
 use crate::sqlite_cli::result::SqliteCliResult;
-use sqlite_rs::{io::SqliteIo, pager::SqlitePager, runtime::SqliteRuntime};
+
+use super::traits::PrintHelp;
 
 pub(super) struct ReplOpen;
 impl ReplOpen {
-  pub(super) fn run(maybe_arg1: Option<String>) -> SqliteCliResult<SqliteRuntime> {
-    let conn = match maybe_arg1 {
-      Some(file_path) => {
-        let io = SqliteIo::open(file_path)?;
-        let pager = SqlitePager::connect(io)?;
+  pub(super) fn run(maybe_arg1: Option<String>) -> SqliteCliResult<SqliteConnection> {
+    let uri_str: String;
 
-        SqliteRuntime::start(pager)?
+    let conn = match maybe_arg1 {
+      Some(conn_str) => {
+        uri_str = if conn_str.contains("://") {
+          match &*conn_str {
+            "" | IN_MEMORY_URI => IN_MEMORY_URI.into(),
+            _ => conn_str,
+          }
+        } else {
+          format!("sqlite://{conn_str}")
+        };
+
+        SqliteConnection::open(&uri_str)?
       }
       None => {
-        let io = SqliteIo::open(":memory:")?;
-        let pager = SqlitePager::connect(io)?;
-        SqliteRuntime::start(pager)?
+        uri_str = IN_MEMORY_URI.into();
+
+        SqliteConnection::open(&uri_str)?
       }
     };
+    println!("Connected: [{uri_str}]");
     Ok(conn)
   }
 }
