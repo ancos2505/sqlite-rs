@@ -9,13 +9,13 @@ use super::{
   cli::Cli,
   result::{SqliteCliError, SqliteCliResult},
 };
-use sqlite_rs::{io::SqliteIoMode, runtime::SqliteRuntime, SqliteConnection};
+use sqlite_rs::{error, io::SqliteIoMode, runtime::SqliteRuntime, SqliteConnection, IN_MEMORY_URI};
 
 #[derive(Debug)]
 pub(crate) struct SqliteCliRepl {
   is_tty: bool,
   cli: Cli,
-  runtime: SqliteRuntime,
+  conn: SqliteConnection,
 }
 
 impl SqliteCliRepl {
@@ -31,18 +31,14 @@ impl SqliteCliRepl {
     use std::io::stdin;
     use std::io::IsTerminal;
 
-    let runtime = match cli.database_file() {
+    let conn = match cli.database_file() {
       Some(file_path) => SqliteConnection::open(format!("sqlite://{}", file_path.as_str()))?,
-      None => SqliteConnection::open(":memory:")?,
+      None => SqliteConnection::open(IN_MEMORY_URI)?,
     };
 
     let is_tty = stdin().is_terminal();
 
-    Ok(Self {
-      cli,
-      runtime,
-      is_tty,
-    })
+    Ok(Self { cli, is_tty, conn })
   }
   fn run_from_pipe(&mut self) -> SqliteCliResult<()> {
     use std::io;
@@ -53,7 +49,7 @@ impl SqliteCliRepl {
     let normalized_input = input.trim();
     if normalized_input.starts_with('.') {
       match normalized_input {
-        ".quit" => (),
+        ".q" | ".quit" => (),
         s => self.internal_command(s)?,
       };
     } else {
@@ -71,7 +67,7 @@ impl SqliteCliRepl {
       env!("SQLITERS_BUILT_AT")
     );
     println!(r#"Enter ".help" for usage hints."#);
-    if *self.runtime().pager().io().mode() == SqliteIoMode::InMemory {
+    if *self.conn.io_mode() == SqliteIoMode::InMemory {
       println!("Connected to a transient in-memory database.");
       println!(r#"Use ".open FILENAME" to reopen on a persistent database."#);
     }
@@ -87,8 +83,12 @@ impl SqliteCliRepl {
       let normalized_input = input.trim();
       if normalized_input.starts_with('.') {
         match normalized_input {
-          ".quit" => is_repl_running = false,
-          s => self.internal_command(s)?,
+          ".q" | ".quit" => is_repl_running = false,
+          s => {
+            if let Err(err) = self.internal_command(s) {
+              println!("Error: {err}");
+            }
+          }
         };
       } else {
         self::sql::run(normalized_input)?;
@@ -107,20 +107,17 @@ impl SqliteCliRepl {
     let maybe_arg1 = line.next().map(|s| s.to_owned());
 
     match command {
+      "." => (),
       ".help" => ReplHelp::run(maybe_arg1)?,
-      ".dbinfo" => ReplDbInfo::run(&mut self.runtime)?,
+      ".dbinfo" => ReplDbInfo::run(&mut self.conn)?,
       ".open" => {
-        self.runtime = ReplOpen::run(maybe_arg1)?;
+        self.conn = ReplOpen::run(maybe_arg1)?;
       }
 
       s => {
-        println!(r#"Error: unknown command or invalid arguments:  "{s}". Enter ".help" for help"#)
+        println!(r#"Error: unknown command or invalid arguments: `{s}`. Enter ".help" for help."#)
       }
     };
     Ok(())
-  }
-
-  pub(crate) fn runtime(&self) -> &SqliteRuntime {
-    &self.runtime
   }
 }

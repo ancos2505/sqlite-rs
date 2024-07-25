@@ -1,8 +1,8 @@
 use crate::result::{SqliteError, SqliteResult};
 use crate::traits::SqliteRawIo;
-use crate::{error, trace};
+use crate::{error, trace, IN_MEMORY_URI};
 use std::fmt::{Debug, Display};
-use std::fs::File;
+use std::fs::{File, Metadata};
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::{Cursor, Read};
@@ -15,6 +15,7 @@ use std::str::FromStr;
 pub struct SqliteIo {
   mode: SqliteIoMode,
   raw_io: Box<dyn SqliteRawIo>,
+  file_metadata: Option<Metadata>,
 }
 
 impl Debug for SqliteIo {
@@ -41,7 +42,7 @@ impl FromStr for SqliteIoMode {
 
   fn from_str(uri_str: &str) -> Result<Self, Self::Err> {
     let mode = match uri_str.trim() {
-      ":memory:" => SqliteIoMode::InMemory,
+      IN_MEMORY_URI => SqliteIoMode::InMemory,
       _ => SqliteIoMode::File,
     };
     Ok(mode)
@@ -55,14 +56,23 @@ impl SqliteIo {
       SqliteIoMode::InMemory => {
         let cursor: Box<Cursor<Vec<u8>>> = Box::new(Cursor::new(vec![]));
         let raw_io = cursor as Box<dyn SqliteRawIo>;
-        Ok(Self { mode, raw_io })
+        Ok(Self {
+          mode,
+          raw_io,
+          file_metadata: None,
+        })
       }
 
       SqliteIoMode::File => {
         let uri = conn_str.parse::<SqliteUri>()?;
-        let file = Box::new(File::open(uri.path())?);
-        let raw_io: Box<dyn SqliteRawIo> = file as Box<dyn SqliteRawIo>;
-        Ok(Self { mode, raw_io })
+        let file = File::open(uri.path())?;
+        let metadata = file.metadata()?;
+        let raw_io = Box::new(file) as Box<dyn SqliteRawIo>;
+        Ok(Self {
+          mode,
+          raw_io,
+          file_metadata: Some(metadata),
+        })
       }
     }
   }
@@ -76,7 +86,16 @@ impl SqliteIo {
   }
 
   pub fn read(&mut self, buf: &mut [u8]) -> SqliteResult<usize> {
-    Ok(self.raw_io.read(buf)?)
+    let bytes_read = self.raw_io.read(buf)?;
+
+    let msg = format!(
+      "[{bytes_read}] Bytes read. File: {} at line {}",
+      file!(),
+      line!()
+    );
+    trace!("{msg}");
+
+    Ok(bytes_read)
   }
 
   pub fn seek(&mut self, pos: u64) -> SqliteResult<u64> {
@@ -96,6 +115,10 @@ impl SqliteIo {
 
   pub fn mode(&self) -> &SqliteIoMode {
     &self.mode
+  }
+
+  pub fn file_metadata(&self) -> Option<&Metadata> {
+    self.file_metadata.as_ref()
   }
 }
 
@@ -166,7 +189,7 @@ impl FromStr for SqliteUri {
           })?
         };
         // TODO: Implement modes
-        // if file_path.exists()  .not() {
+        // if !file_path.exists() {
         //   return Err(Sqlite);
         // }
 

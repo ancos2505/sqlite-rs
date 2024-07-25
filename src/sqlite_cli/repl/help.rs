@@ -16,7 +16,7 @@ impl ReplHelp {
     let commands = [
       ".dbinfo ?DB?             Show status information about the database",
       ".open ?OPTIONS? ?FILE?   Close existing database and reopen FILE",
-      ".quit                    Exit this program",
+      ".q  or .quit             Exit this program",
     ];
     commands.iter().for_each(|line| println!("{line}"));
   }

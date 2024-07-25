@@ -3,14 +3,7 @@
 //! # SQLite arquitecture
 //! *Reference:* https://www.sqlite.org/arch.html
 
-use crate::io::SqliteIo;
-use crate::pager::SqlitePager;
-use crate::result::SqliteResult;
-use crate::runtime::SqliteRuntime;
-
-use std::sync::OnceLock;
-
-pub mod header;
+pub mod file_header;
 pub mod io;
 #[cfg(feature = "log")]
 pub(crate) mod log;
@@ -26,12 +19,23 @@ pub mod macros;
 #[cfg(test)]
 mod tests;
 
-pub struct SqliteConnection;
+use std::{fs::Metadata, sync::OnceLock};
+
+use crate::{
+  file_header::SqliteHeader, io::SqliteIoMode, result::SqliteResult, runtime::SqliteRuntime,
+};
 
 static VERSION_NUMBER: OnceLock<u32> = OnceLock::new();
 
+pub const IN_MEMORY_URI: &str = "sqlite://:memory:";
+
+#[derive(Debug)]
+pub struct SqliteConnection {
+  runtime: SqliteRuntime,
+}
+
 impl SqliteConnection {
-  pub fn open(conn_str: impl AsRef<str>) -> SqliteResult<SqliteRuntime> {
+  pub fn open(conn_str: impl AsRef<str>) -> SqliteResult<Self> {
     crate::log::EnvLogger::init();
 
     VERSION_NUMBER.get_or_init(|| {
@@ -43,16 +47,23 @@ impl SqliteConnection {
       (10_000 * release) + (100 * major) + minor
     });
 
-    trace!("Openning SQliteIo [{}]...", conn_str.as_ref());
-    let io = SqliteIo::open(conn_str)?;
-    trace!("SQliteIo started: [{io:?}].");
-    trace!("Connecting SqlitePager...");
-    let pager = SqlitePager::connect(io)?;
-    trace!("SQliteIo started: [{pager:?}].");
     trace!("Starting SqliteRuntime...");
-    let runtime = SqliteRuntime::start(pager)?;
+
+    let runtime = SqliteRuntime::start(conn_str)?;
     trace!("SqliteRuntime started: [{runtime:?}].");
 
-    Ok(runtime)
+    Ok(Self { runtime })
+  }
+
+  pub fn file_header(&self) -> &SqliteHeader {
+    &self.runtime.file_header()
+  }
+
+  pub fn io_mode(&self) -> &SqliteIoMode {
+    self.runtime.pager().io().mode()
+  }
+
+  pub fn file_metadata(&self) -> Option<&Metadata> {
+    self.runtime.pager().io().file_metadata()
   }
 }

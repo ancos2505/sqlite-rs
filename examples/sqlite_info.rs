@@ -1,7 +1,4 @@
-// use sqlite_rs::SqliteConnection;
-// use std::{fs::File, io::Read};
-
-use sqlite_rs::{runtime::SqliteRuntime, SqliteConnection};
+use sqlite_rs::SqliteConnection;
 
 type AppResult<T> = Result<T, AppError>;
 type AppError = Box<dyn std::error::Error>;
@@ -22,22 +19,22 @@ impl SqliteInfo {
       "./data/mydatabase.db",
     ];
     files.iter().try_for_each(|file_path| -> AppResult<()> {
-      let runtime = SqliteConnection::open(format!("sqlite://{file_path}"))?;
+      let conn = SqliteConnection::open(format!("sqlite://{file_path}"))?;
       // let sqlite_database = Self::read_bytes(&file)?;
 
       println!("[{file_path}]:");
-      Self::print_sqlite_info(&runtime)?;
+      Self::print_sqlite_info(&conn)?;
       Ok(())
     })?;
 
     Ok(())
   }
 
-  fn print_sqlite_info(runtime: &SqliteRuntime) -> AppResult<()> {
+  fn print_sqlite_info(conn: &SqliteConnection) -> AppResult<()> {
     const LABEL_WIDTH: usize = 21;
 
     // TODO:
-    let sqlite_header = runtime.header();
+    let sqlite_header = conn.file_header();
 
     let mut output = "".to_owned();
 

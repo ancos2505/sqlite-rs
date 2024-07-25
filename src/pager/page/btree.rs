@@ -1,4 +1,4 @@
-//! ### B-tree Pages
+//! # B-tree Pages
 //!  The b-tree algorithm provides key/data storage with unique and ordered keys
 //! on page-oriented storage devices. For background information on b-trees, see
 //! Knuth, The Art Of Computer Programming, Volume 3 "Sorting and Searching",
@@ -14,16 +14,16 @@
 //!
 //!  The number of keys on an interior b-tree page, K, is almost always at least
 //! 2 and is usually much more than 2. The only exception is when page 1 is an
-//! interior b-tree page. Page 1 has 100 fewer bytes of storage space available,
-//! due to the presence of the database header at the beginning of that page,
-//! and so sometimes (rarely) if page 1 is an interior b-tree page, it can end
-//! up holding just a single key. In all other cases, K is 2 or more. The upper
-//! bound on K is as many keys as will fit on the page. Large keys on index
-//! b-trees are split up into overflow pages so that no single key uses more
-//! than one fourth of the available storage space on the page and hence every
-//! internal page is able to store at least 4 keys. The integer keys of table
-//! b-trees are never large enough to require overflow, so key overflow only
-//! occurs on index b-trees.
+//! interior b-tree page. **Page 1 has 100 fewer bytes of storage space
+//! available, due to the presence of the database header at the beginning of
+//! that page**, and so sometimes (rarely) **if page 1 is an interior b-tree
+//! page**, it can end up holding just a single key. In all other cases, K is 2
+//! or more. The upper bound on K is as many keys as will fit on the page. Large
+//! keys on index b-trees are split up into overflow pages so that no single key
+//! uses more than one fourth of the available storage space on the page and
+//! hence every internal page is able to store at least 4 keys. The integer keys
+//! of table b-trees are never large enough to require overflow, so key overflow
+//! only occurs on index b-trees.
 //!
 //!  Define the depth of a leaf b-tree to be 1 and the depth of any interior
 //! b-tree to be one more than the maximum depth of any of its children. In a
@@ -91,21 +91,85 @@
 //! the b-tree page and the balance is stored in a linked list of content
 //! overflow pages.
 //!
-//!  A b-tree page is divided into regions in the following order:
-//!
-//! 1. The 100-byte database file header (found on page 1 only)
-//! 2. The 8 or 12 byte b-tree page header
-//! 3. The cell pointer array
-//! 4. Unallocated space
-//! 5. The cell content area
-//! 6. The reserved region.
-//!
-//!  The 100-byte database file header is found only on page 1, which is always
-//! a table b-tree page. All other b-tree pages in the database file omit this
-//! 100-byte header.
-//!
-//!  The reserved region is an area of unused space at the end of every page
-//! (except the locking page) that extensions can use to hold per-page
-//! information. The size of the reserved region is determined by the one-byte
-//! unsigned integer found at an offset of 20 into the database file header. The
-//! size of the reserved region is usually zero.
+
+pub(super) mod freeblock;
+pub(super) mod header;
+
+use crate::{
+  impl_name,
+  traits::{Name, ParseBytes},
+};
+
+use self::header::BtreePageHeader;
+
+/// ## BtreePage
+///
+///  A b-tree page is divided into regions in the following order:
+///
+/// 1. The 100-byte database file header (found on page 1 only)
+/// 2. The 8 or 12 byte b-tree page header
+/// 3. The cell pointer array
+/// 4. Unallocated space
+/// 5. The cell content area
+/// 6. The reserved region.
+///
+///  The 100-byte database file header is found only on page 1, **which is
+/// always a table b-tree page**. All other b-tree pages in the database file
+/// omit this 100-byte header.
+///
+///  The reserved region is an area of unused space at the end of every page
+/// (**except the locking page**) that extensions can use to hold per-page
+/// information. The size of the reserved region is determined by the one-byte
+/// unsigned integer found at an offset of 20 into the database file header. The
+/// size of the reserved region is usually zero.
+#[derive(Debug)]
+pub struct BtreePage<const N: usize> {
+  size: usize,
+  /// The 8 or 12 byte b-tree page header
+  header: BtreePageHeader,
+  // /// The cell pointer array
+  // cell_pointer_array: CellPointerArray,
+  // /// Unallocated space
+  // unallocated_space: UnallocatedSpace,
+  // // The cell content area
+  // cell_content_area: CellContentRegion,
+  // // The reserved region.
+  // reserved_region: (),
+}
+
+impl<const N: usize> BtreePage<N> {
+  pub fn parse(bytes: [u8; N]) -> crate::result::SqliteResult<Self> {
+    let header = BtreePageHeader::parse(&bytes[0..12])?;
+    dbg!(&header);
+    Ok(Self { size: N, header })
+  }
+}
+
+/// ### CellPointerArray
+///  The cell pointer array of a b-tree page immediately follows the b-tree page
+/// header. Let K be the number of cells on the btree. The cell pointer array
+/// consists of K 2-byte integer offsets to the cell contents. The cell pointers
+/// are arranged in key order with left-most cell (the cell with the smallest
+/// key) first and the right-most cell (the cell with the largest key) last.
+#[derive(Debug)]
+pub struct CellPointerArray;
+
+/// ### UnallocatedSpace
+///  If a page contains no cells (which is only possible for a root page of a
+/// table that contains no rows) then the offset to the cell content area will
+/// equal the page size minus the bytes of reserved space. If the database uses
+/// a 65536-byte page size and the reserved space is zero (the usual value for
+/// reserved space) then the cell content offset of an empty page wants to be
+/// 65536. However, that integer is too large to be stored in a 2-byte unsigned
+/// integer, so a value of 0 is used in its place.
+#[derive(Debug)]
+pub struct UnallocatedSpace;
+
+/// ### CellContentRegion
+///  Cell content is stored in the cell content region of the b-tree page.
+/// SQLite strives to place cells as far toward the end of the b-tree page as it
+/// can, in order to leave space for future growth of the cell pointer array.
+/// The area in between the last cell pointer array entry and the beginning of
+/// the first cell is the unallocated region.
+#[derive(Debug)]
+pub struct CellContentRegion;
