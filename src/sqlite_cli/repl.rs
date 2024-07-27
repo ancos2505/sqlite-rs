@@ -31,11 +31,13 @@ impl SqliteCliRepl {
     use std::io::stdin;
     use std::io::IsTerminal;
 
+    dbg!(cli.database_file());
+
     let conn = match cli.database_file() {
       Some(file_path) => SqliteConnection::open(format!("sqlite://{}", file_path.as_str()))?,
       None => SqliteConnection::open(IN_MEMORY_URI)?,
     };
-
+    dbg!(conn.io_mode());
     let is_tty = stdin().is_terminal();
 
     Ok(Self { cli, is_tty, conn })
@@ -68,8 +70,10 @@ impl SqliteCliRepl {
     );
     println!(r#"Enter ".help" for usage hints."#);
     if *self.conn.io_mode() == SqliteIoMode::InMemory {
+      dbg!(self.conn.io_mode());
       println!("Connected to a transient in-memory database.");
       println!(r#"Use ".open FILENAME" to reopen on a persistent database."#);
+      todo!();
     }
     let mut is_repl_running = true;
     while is_repl_running {

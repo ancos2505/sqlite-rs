@@ -14,10 +14,20 @@ impl ReplOpen {
         uri_str = if conn_str.contains("://") {
           match &*conn_str {
             "" | IN_MEMORY_URI => IN_MEMORY_URI.into(),
-            _ => conn_str,
+            s => {
+              if s.contains(":") {
+                IN_MEMORY_URI.into()
+              } else {
+                conn_str
+              }
+            }
           }
         } else {
-          format!("sqlite://{conn_str}")
+          if conn_str.contains(":") {
+            IN_MEMORY_URI.into()
+          } else {
+            format!("sqlite://{conn_str}")
+          }
         };
 
         SqliteConnection::open(&uri_str)?

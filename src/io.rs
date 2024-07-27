@@ -41,9 +41,24 @@ impl FromStr for SqliteIoMode {
   type Err = SqliteError;
 
   fn from_str(uri_str: &str) -> Result<Self, Self::Err> {
-    let mode = match uri_str.trim() {
-      IN_MEMORY_URI => SqliteIoMode::InMemory,
-      _ => SqliteIoMode::File,
+    let mode = {
+      match uri_str.trim() {
+        IN_MEMORY_URI => SqliteIoMode::InMemory,
+        trimmed_uri_str => {
+          let mut s = trimmed_uri_str.split("://");
+          s.next();
+          match s.next() {
+            Some(path) => {
+              if path.contains(":") {
+                SqliteIoMode::InMemory
+              } else {
+                SqliteIoMode::File
+              }
+            }
+            None => SqliteIoMode::InMemory,
+          }
+        }
+      }
     };
     Ok(mode)
   }
@@ -52,6 +67,7 @@ impl SqliteIo {
   pub fn open(input: impl AsRef<str>) -> SqliteResult<Self> {
     let conn_str = input.as_ref();
     let mode = conn_str.parse::<SqliteIoMode>()?;
+    dbg!(&mode);
     match mode {
       SqliteIoMode::InMemory => {
         let cursor: Box<Cursor<Vec<u8>>> = Box::new(Cursor::new(vec![]));
